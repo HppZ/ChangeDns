@@ -12,20 +12,21 @@ namespace ChangeDns
 {
     class Program
     {
-        const string adapter = "Realtek PCIe GBE Family Controller";
+        const string ADAPTER_NAME = "Realtek PCIe GBE Family Controller";
 
         static void Main(string[] args)
         {
             var isGoogleDns = GetCurrentDns();
-            Console.WriteLine("current is " + (isGoogleDns ? "" : "not") + "Google DNS");
+            Console.WriteLine("Is " + (isGoogleDns ? "" : " NOT ") + "Google DNS");
 
             Console.WriteLine(".");
             Console.WriteLine(".");
             Console.WriteLine(".");
 
             Console.WriteLine("Set begin");
-            SetDNS(adapter,   "7.7.7.7" );
-            Console.WriteLine("Set completed");
+            SetDNS(ADAPTER_NAME, isGoogleDns ? null : "8.8.8.8");
+            var succeed = GetCurrentDns() != isGoogleDns;
+            Console.WriteLine("Set completed " + (succeed ? "成功" : "失败"));
 
             Console.ReadLine();
         }
@@ -35,6 +36,8 @@ namespace ChangeDns
         /// </summary>
         private static void SetDNS(string NIC, string DNS)
         {
+            Console.WriteLine("New dns : " + (DNS ?? "auto"));
+
             ManagementClass objMC = new ManagementClass("Win32_NetworkAdapterConfiguration");
             ManagementObjectCollection objMOC = objMC.GetInstances();
 
@@ -48,9 +51,8 @@ namespace ChangeDns
                         try
                         {
                             ManagementBaseObject newDNS = objMO.GetMethodParameters("SetDNSServerSearchOrder");
-                            newDNS["DNSServerSearchOrder"] = DNS?.Split('.');
-                            ManagementBaseObject setDNS =
-                                objMO.InvokeMethod("SetDNSServerSearchOrder", newDNS, null);
+                            newDNS["DNSServerSearchOrder"] = DNS?.Split(',');
+                            ManagementBaseObject setDNS = objMO.InvokeMethod("SetDNSServerSearchOrder", newDNS, null);
                         }
                         catch (Exception exception)
                         {
@@ -73,7 +75,7 @@ namespace ChangeDns
 
                 IPInterfaceProperties adapterProperties = adapter.GetIPProperties();
                 IPAddressCollection dnsServers = adapterProperties.DnsAddresses;
-                if (dnsServers.Count > 0)
+                if (adapter.Description.Contains(ADAPTER_NAME) && dnsServers.Count > 0)
                 {
                     Console.WriteLine(adapter.Description);
                     foreach (IPAddress dns in dnsServers)
@@ -81,6 +83,7 @@ namespace ChangeDns
                         if (dns.ToString().Contains("8.8"))
                         {
                             result = true;
+                            break;
                         }
                         Console.WriteLine("  DNS Servers ............................. : {0}", dns.ToString());
                     }
