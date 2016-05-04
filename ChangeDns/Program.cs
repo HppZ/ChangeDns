@@ -27,7 +27,10 @@ namespace ChangeDns
             Console.WriteLine("Set begin");
             SetDNS(ADAPTER_NAME, isGoogleDns ? null : "8.8.8.8");
             var succeed = GetCurrentDns() != isGoogleDns;
+
+            Console.ForegroundColor = succeed? ConsoleColor.Green : ConsoleColor.Red;
             Console.WriteLine("Set completed " + (succeed ? "成功" : "失败"));
+            Console.ResetColor();
 
             if (!succeed)
             {
@@ -44,7 +47,9 @@ namespace ChangeDns
         /// </summary>
         private static void SetDNS(string NIC, string DNS)
         {
-            Console.WriteLine("New dns : " + (DNS ?? "auto"));
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("New dns : " + (DNS ?? "Auto"));
+            Console.ResetColor();
 
             ManagementClass objMC = new ManagementClass("Win32_NetworkAdapterConfiguration");
             ManagementObjectCollection objMOC = objMC.GetInstances();
