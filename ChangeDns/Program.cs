@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Management;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Threading;
 
 namespace ChangeDns
 {
@@ -28,7 +29,14 @@ namespace ChangeDns
             var succeed = GetCurrentDns() != isGoogleDns;
             Console.WriteLine("Set completed " + (succeed ? "成功" : "失败"));
 
-            Console.ReadLine();
+            if (!succeed)
+            {
+                Console.ReadLine();
+            }
+            else
+            {
+                Thread.Sleep(1500);
+            }
         }
 
         /// <summary>
