@@ -14,33 +14,43 @@ namespace ChangeDns
     class Program
     {
         const string ADAPTER_NAME = "Realtek PCIe GBE Family Controller";
+        const string ADAPTER_NAME2 = "Broadcom 802.11ac Network Adapter";
 
         static void Main(string[] args)
         {
-            var isGoogleDns = GetCurrentDns();
-            Console.WriteLine("Is " + (isGoogleDns ? "" : " NOT ") + "Google DNS");
-
-            Console.WriteLine(".");
-            Console.WriteLine(".");
-            Console.WriteLine(".");
-
-            Console.WriteLine("Set begin");
-            SetDNS(ADAPTER_NAME, isGoogleDns ? null : "8.8.8.8");
-            var succeed = GetCurrentDns() != isGoogleDns;
-
-            Console.ForegroundColor = succeed? ConsoleColor.Green : ConsoleColor.Red;
-            Console.WriteLine("Set completed " + (succeed ? "成功" : "失败"));
-            Console.ResetColor();
-
-            if (!succeed)
-            {
-                Console.ReadLine();
-            }
-            else
+            if (ChangeDNS(ADAPTER_NAME) || ChangeDNS(ADAPTER_NAME2))
             {
                 Thread.Sleep(1500);
             }
+            else
+            {
+                Console.ReadLine();
+            }
         }
+
+
+        private static bool ChangeDNS(string adapterName)
+        {
+            Console.WriteLine();
+            Console.WriteLine("--------------------------------------------------------------------------");
+            Console.WriteLine("--------------------------------------------------------------------------");
+
+            var isGoogleDns = IsCurGoogleDns(adapterName);
+            Console.WriteLine("current dns is " + (isGoogleDns ? "" : " NOT ") + "Google dns");
+            Console.WriteLine();
+
+            Console.WriteLine("Set begin");
+            SetDNS(adapterName, isGoogleDns ? null : "8.8.8.8");
+            Console.WriteLine();
+
+            var succeed = IsCurGoogleDns(adapterName) != isGoogleDns;
+            Console.ForegroundColor = succeed ? ConsoleColor.Green : ConsoleColor.Red;
+            Console.WriteLine("Set completed " + (succeed ? "成功" : "失败"));
+            Console.ResetColor();
+
+            return succeed;
+        }
+
 
         /// <summary>
         /// 设置DNS
@@ -49,6 +59,7 @@ namespace ChangeDns
         {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("New dns : " + (DNS ?? "Auto"));
+            Console.WriteLine("Adapter : " + NIC);
             Console.ResetColor();
 
             ManagementClass objMC = new ManagementClass("Win32_NetworkAdapterConfiguration");
@@ -69,7 +80,7 @@ namespace ChangeDns
                         }
                         catch (Exception exception)
                         {
-                            Console.WriteLine("设置出错 " + exception.Message);
+                            Console.WriteLine("SetDNS exception " + exception.Message);
                         }
                     }
                 }
@@ -79,7 +90,7 @@ namespace ChangeDns
         /// <summary>
         /// 获取当前DNS
         /// </summary>
-        private static bool GetCurrentDns()
+        private static bool IsCurGoogleDns(string adapterName)
         {
             bool result = false;
             NetworkInterface[] adapters = NetworkInterface.GetAllNetworkInterfaces();
@@ -88,9 +99,9 @@ namespace ChangeDns
 
                 IPInterfaceProperties adapterProperties = adapter.GetIPProperties();
                 IPAddressCollection dnsServers = adapterProperties.DnsAddresses;
-                if (adapter.Description.Contains(ADAPTER_NAME) && dnsServers.Count > 0)
+                if (adapter.Description.Contains(adapterName) && dnsServers.Count > 0)
                 {
-                    Console.WriteLine(adapter.Description);
+                   // Console.WriteLine(adapter.Description);
                     foreach (IPAddress dns in dnsServers)
                     {
                         if (dns.ToString().Contains("8.8"))
@@ -98,9 +109,8 @@ namespace ChangeDns
                             result = true;
                             break;
                         }
-                        Console.WriteLine("  DNS Servers ............................. : {0}", dns.ToString());
+                       // Console.WriteLine("  DNS Servers ............................. : {0}", dns.ToString());
                     }
-                    Console.WriteLine();
                 }
             }
 
